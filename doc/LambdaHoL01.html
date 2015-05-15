@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+<link rel="shortcut icon" href="assets/ico/favicon.png">
+<title>Project Lmbda Hands on,</title>
+
+<!-- Bootstrap core CSS -->
+<link href="dist/css/bootstrap.css" rel="stylesheet">
+
+<!-- Custom styles for this template -->
+<link href="starter.css" rel="stylesheet">
+
+<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+</head>
+
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
+      <a class="navbar-brand" href="#">Project Lmbda Hands on.</a> </div>
+  </div>
+</div>
+<div class="container">
+  <div class="main">
+    <h1>Lambda 道場 問題編</h1>
+    <div class="row">
+      <div class="col-md-3">
+        <div class="sidebar">
+          <p>Lambda 道場 問題編</p>
+          <ul>
+            <li>1. はじめに</li>
+            <li><a href="#sec2">2. Lambda 式</a></li>
+            <li><a href="#sec3">3. for 文の変換 (Iterable)</a></li>
+            <li><a href="#sec4">4. for 文の変換 (Stream)</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-9">
+        <h2>1. はじめに</h2>
+        <p>Java SE 8 で Project Lambda が導入されました。</p>
+        <p>Project Lambda が導入された目的は、マルチコア時代に求められる細粒度のパラレル処理を容易に記述することにあります。</p>
+        <p>関数型言語のアイデアを活かした Lambda 式や Stream API を使用することで、コレクションに対するイテレーションを今までのfor 文や拡張 for 文といった外部イテレータではなく、内部イテレータによって行うことができます。そして、内部イテレータで記述した処理をパラレル処理することも容易です。</p>
+        <p>そして、関数型言語のアイデアを導入したことにより、Java のプログラミングスタイルが大きく変化します。</p>
+        <p>慣れてしまえばとても効率よく処理が記述できますが、始めは考え方の違いに戸惑う方も多いかもしれません。</p>
+        <p>そこで、Lambda 道場では習うより慣れろで、Project Lambda の Lambda 式や Stream API を何度も書いていただきます。繰り返し書くことにより内部イテレータの書き方も身についていくはずです。</p>
+        <p>本ハンズオンでは、プログラムの断片を提示していきます。それを Lambda 式や Stream で書き換えていってください。PC はなくても大丈夫。鉛筆で直接書き換えていってください。</p>
+        <p>もし、余裕があるのであれば、家に帰ってから、ぜひ PC で実行し直してみてください。使用した問題、解答は GitHub の LambdaDojo プロジェクトに置いておきます。<a name="sec2" id="sec" ></a></p>
+        <p>&nbsp;</p>
+        <p>LambdaDojo <a href="https://github.com/skrb/LambdaDojo">https://github.com/skrb/LambdaDojo</a></p>
+        <p>&nbsp;</p>
+        <h2>2. Lambda 式</h2>
+        <p>Project Lambda の基本は Lambda 式です。</p>
+        <p>Java では関数型やクロージャは定義されていませんが、Lambda 式を使用することでオブジェクトをあたかも関数のように扱うことができます。</p>
+        <p>内部イテレータを実現する Stream API でも、イテレーションの処理は Lambda 式を用いて、関数のように記述します。</p>
+        <p>オブジェクトではなく関数として扱うということは、オブジェクトに対する意識も変化させなくてはなりません。</p>
+        <p>文法的には、Lambda 式は関数型インタフェースを実装した匿名クラスの簡易的な記述法とみなせます。関数型インタフェースは実装すべきメソッドが単一であるインタフェースです。</p>
+        <p>しかし、Lambda 式を活用するには、匿名クラスとして考えるのではなく、関数として考えなくてはなりません。関数として考えることで関心の分離や、関数の合成などが実現できます。</p>
+        <p>本セクションでは、まず単純な例で匿名クラスを Lambda 式に変換することから始めます。次に、Java SE 8で追加された汎用の関数型インタフェースを使ってみます。そして、最後には Lambda 式を関数として扱う例について取りあげます。</p>
+        <p>&nbsp;</p>
+        <h4>2-1. 匿名クラスを Lambda 式で書き換えてみましょう</h4>
+        <p>Lambda 式は関数型インタフェースを実装した匿名クラスのように記述することができます。Lambda 式の構文は次のようになります。</p>
+        <div>
+        <pre class="prettyprint">        (引数) -&gt; { 処理 }</pre>
+        </div>
+        <p>引数は関数型インタフェースの実装すべきメソッドの引数を表し、処理はそのメソッドの実体を表しています。</p>
+        <p>Java SE 7で提供されているインタフェースで関数型インタフェースとなる主なインタフェースを以下に示します。</p>
+        <ul>
+          <li>java.lang.Runnable</li>
+          <li>java.util.Callable</li>
+          <li>java.util.Comparator</li>
+        </ul>
+        <p>そこで、これらのインタフェースの匿名クラスを Lambda 式を書き換えてみてましょう。</p>
+        <p>まずは、Comparator インタフェースです。</p>
+        <p>以下のコードは整数のリストをソートするため、Comparator インタフェースの匿名クラスを使用しています。この匿名クラスを Lambda 式で書き直してみましょう。</p>
+        <p>&nbsp;</p>
+        <div>
+        <pre class="prettyprint">        // この匿名クラスを Lambda 式で書きかえ
+        Comparator&lt;Integer&gt; comparator = new Comparator&lt;Integer&gt;() {
+            @Override
+            public int compare(Integer x, Integer y) {
+                return Integer.compare(x, y);
+            }
+        };
+        
+        List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 10; i++) {
+            numbers.add(i);
+        }
+        Random random = new Random();
+        for (int i = 0; i &lt; 10; i++) {
+            Integer number = numbers.remove(random.nextInt(10 - i));
+            numbers.add(number);
+        }
+
+        System.out.println("Before Sort: " + numbers);
+
+        // 整数のリストをソート
+        Collections.sort(numbers, comparator);
+
+        System.out.println("After Sort: " + numbers);</pre></div>
+        <p>&nbsp;</p>
+        <h4>2-2. 匿名クラスを Lambda 式で書きかえてみましょう</h4>
+        <p>次に Concurrency Utilities で使用される Callable インタフェースを Lambda 式にしてみましょう。</p>
+        <p>以下のコードは非同期にファイルを読み込むためのコードです。Callable インタフェースの匿名クラスではファイルを読み込む処理を行っています。これを Lambda 式に書きかえてみましょう。</p>
+        <p>&nbsp;</p>
+        <div>
+        <pre class="prettyprint">        // この匿名クラスを Lambda 式で書きかえ
+        Callable&lt;List&lt;String&gt;&gt; callable = new Callable&lt;List&lt;String&gt;&gt;() {
+            @Override
+            public List&lt;String&gt; call() throws Exception {
+                // ファイル読み込み処理
+                Path path = Paths.get("src/questions/LambdaInsteadOfAnonClass.java");
+                return Files.readAllLines(path);
+            }
+        };
+        
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+
+        // 非同期にファイルを読み込み
+        Future&lt;List&lt;String&gt;&gt; future = executor.submit(callable);
+        try {
+            System.out.println(future.get());
+        } catch (InterruptedException | ExecutionException ex) {
+            // 例外処理
+        } finally {
+            executor.shutdown();
+        }</pre></div>
+        <p>&nbsp;</p>
+        <h4>2-3. 匿名クラスを Lambda 式で書き換えてみましょう</h4>
+        <p>既存の関数型インタフェースの最後は Runnable インタフェースです。Runnable インタフェースも非同期処理に使用されますが、戻り値はありません。</p>
+        <p>ここでは、1 秒ごとに時間を表示するタスクを Runnable インタフェースで記述してみました。これを Lambda 式で書きかえてみましょう。</p>
+        <div>
+        <pre class="prettyprint">        // 1秒ごとに時間を表示するタスク
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                for(;;) {
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                        System.out.println(LocalTime.now().format(formatter));
+                    } catch (InterruptedException ex) {
+                        return;
+                    }
+                }
+            }
+        };
+        
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+
+        // 1分間だけ、タスクを実行する
+        executor.submit(runnable);
+        try {
+            TimeUnit.MINUTES.sleep(1);
+        } catch (InterruptedException ex) {
+        } finally {        
+            executor.shutdownNow();
+        }</pre></div>
+        <p>&nbsp;</p>
+        <h4>2-4. 汎用の関数型インタフェースを使ってみましょう</h4>
+        <p>次に Java SE 8 で導入された、汎用の関数型インタフェースの匿名クラスを Lambda 式で書きかえてみましょう。</p>
+        <p>汎用の関数型インタフェースは java.util.function パッケージで提供されており、すべて合わせると 43 インタフェースにもなります。</p>
+        <p>しかし、基本となるのは以下の 4 種類のインタフェースです。</p>
+        <ul>
+          <li><strong>Function</strong> 引数あり、返り値あり</li>
+          <li><strong>Consumer</strong> 引数あり、返り値なし</li>
+          <li><strong>Predicate</strong> 引数なり、返り値の型は boolean 型</li>
+          <li><strong>Supplier</strong> 引数なし、返り値あり</li>
+        </ul>
+        <p>これらのインタフェースの引数の個数が違うインタフェース、プリミティブに対応したインタフェースなどが追加されていますが、基本的な動作はこの 4 種類です。</p>
+        <p>Function インタフェースは、その名の通り一般的な関数を表します。Consumer インタフェースは for 文/拡張 for 文の書きかえに使われることが多いインタフェースです。</p>
+        <p>Predicate インタフェースは戻り値が boolean であることから、フィルタリングなど条件に合致しているかどうかを調べるために使用されます。最後の Supplier インタフェースはオブジェクトのファクトリとして使用されます。</p>
+        <p>ここでは、Function インタフェースを使用して単語の平均長を求める処理を記述しています。これを Lambda 式で書きかえてみましょう。</p>
+        <div>
+          <pre class="prettyprint">        Function&lt;String, Integer&gt; function = new Function&lt;String, Integer&gt;() {
+            @Override
+            public Integer apply(String word) {
+                return word.length();
+            }
+        };
+        
+        List&lt;String&gt; words = Arrays.asList("one thing was certain that the white kitten&quot; 
+             + &quot; had had nothing to do with it".split(" "));
+        double average = 0.0;
+        for (String word: words) {
+            average += function.apply(word);
+        }
+        average /= words.size();
+        System.out.println("Average: " + average);</pre>
+        </div>
+        <p>ここでは、拡張 for 文を使用して単語長を合計していますが、このような処理はゆくゆくは Stream API に置き換えなくてはいくべきです。これについては、4 章で取りあげます。</p>
+        <p>&nbsp;</p>
+        <h4>2-5. 高階関数を使ってみましょう</h4>
+        <p>今までの Lambda 式の使い方を見てきて、気づいたことはありませんか。</p>
+        <p>それは、Lambda 式をメソッドの引数に使用している場合が多いということです。</p>
+        <p>Lambda 式を匿名クラスの置き換えととらえてしまうと、単にメソッドの引数にオブジェクトを渡しているだけのように思えるかもしれません。しかし、Lambda 式を関数のように扱うことで、ちょっと見方が変わってきます。</p>
+        <p>このように関数を引数にとる、もしくは返り値が関数になる関数を高階関数と呼びます。Lambda 式を活用する場合にも、高階関数 (Java の場合、高階メソッドかもしれませんが) が重要となります。</p>
+        <p>たとえば、2-1 の Comparator インタフェースの Lambda 式を考えてみましょう。</p>
+        <p>Collections クラスの sort メソッドは、どのような順序でソートを行えばいいかということを、引数で渡した関数に委譲しています。2-1 では自然順序でソートしましたが、Lambda 式だけを変えるだけで、逆順にすることも可能です。</p>
+        <p>このように、 処理を外部に分離して処理することを、関心の分離と呼びます。</p>
+        <p>関心の分離は関数を使用しなくても実現することができます。たとえば、Java では継承を使用して複数の処理を切り替えます。デザインパターンの Strategy パターンが継承を使用した関心の分離を行うパターンです。</p>
+        <p>たとえば、Strategy パターンの例として、、Container クラスに output メソッドを定義し、その引数に渡したオブジェクトでどのように出力を行うかを決めています。</p>
+        <div>
+          <pre class="prettyprint">    static class Container<T> {
+
+        private T value;
+
+        public Container(T value) {
+            this.value = value;
+        }
+
+        public void output(Consumer<T> saver) {
+            saver.accept(value);
+        }
+    }
+    
+    private void useContainer() {
+        Container<String> container = new Container<>("Hello, World!");
+        
+        container.output(new Consumer<String>() {
+            @Override
+            public void accept(String value) {
+                System.out.println(value);
+            }
+        });
+        
+        final String filename = "container.txt";
+        container.output(new Consumer<String>() {
+            @Override
+            public void accept(String value) {
+                try {
+                    Path path = Paths.get(filename);
+                    Files.write(path, value.getBytes());
+                } catch (IOException ex) {
+                    // 例外処理
+                    System.err.println("printに失敗しました");
+                }
+            }
+        });
+    }</pre>
+        </div>
+        <p>一般的に、Strategy パターンでは、その処理に応じたインタフェースを作成しますが、ここでは汎用の Consumer インタフェースを使用しています。</p>
+        <p>上のコードでは output メソッドに渡すのは匿名クラスのオブジェクトです。これを Lambda 式で書きかえてみましょう。</p>
+        <p>Lambda 式を使用することで、どのような処理をおこなうのか分かりやすくなるはずです。</p>
+        <p>もし、自作のライブラリで Lambda 式を活用していきたいと考えるのであれば、高階関数を使用してみるのがいいのではないでしょうか。</p>
+        <p>&nbsp;</p>
+        <h4>2-6. 関数合成をしてみましょう</h4>
+        <p>関数を使うことの利点の 1 つに、単純な処理を組み合わせて複雑な処理を組み立てられることがあります。</p>
+        <p>たとえば、次に示す Person クラスのコレクションをソートすることを考えてみましょう。</p>
+        <div>
+          <pre class="prettyprint">    class Person {
+
+        private String first;
+        private String last;
+
+        public Person(String first, String last) {
+            this.first = first;
+            this.last = last;
+        }
+
+        public String getFirst() {
+            return first;
+        }
+
+        public String getLast() {
+            return last;
+        }
+    }</pre>
+        </div>
+        <p>人名でソートするには、まずラストネームでソートを行います。ラストネームが同一であれば、ファーストネームで比較します。これを行うコンパレータを何も考えずに記述すると次のようになります。</p>
+        <div>
+          <pre class="prettyprint">    private void sortPerson() {
+        List&lt;Person&gt; persons = Arrays.asList(
+                new Person("James", "Brown"),
+                new Person("David", "Crosby"),
+                new Person("James", "Taylor"),
+                new Person("Jackson", "Brown"),
+                new Person("Neil", "Young"),
+                new Person("Coco", "Taylor")
+        );
+
+        Comparator&lt;Person&gt; comparator = new Comparator&lt;Person&gt;() {
+            @Override
+            public int compare(Person p1, Person p2) {
+                // 姓で比較
+                String last1 = p1.getLast();
+                String last2 = p2.getLast();
+                int result = last1.compareTo(last2);
+
+                if (result != 0) {
+                    return result;
+                } else {
+                    // 姓が同じ場合、名で比較
+                    String first1 = p1.getFirst();
+                    String first2 = p2.getFirst();
+                    return first1.compareTo(first2);
+                }
+            }
+        };
+
+        Collections.sort(persons, comparator);
+        System.out.println(persons);
+    }</pre>
+        </div>
+        <p>このコンパレータはそれほど複雑な処理ではありませんが、if 文が含まれていたりとちょっとイヤな感じです。</p>
+        <p>そこで、ファーストネームで比較するコンパレータの Lambda 式と、ラストネームで比較するコンパレータの Lambda 式を組み合わせて、同じ処理を行えるようにしてみましょう。</p>
+        <p>ちょっと難しいですか? Comparator の Javadoc をよく見てみると、使えそうなメソッドがあるはずですよ。</p>
+        <p>&nbsp;</p>
+        <div><a name="sec3" id="sec3" ></a>
+        </div>
+        <p>&nbsp;</p>
+        <h3>3. for 文の変換 (Iterable)</h3>
+        <p>Lambda 文を書くことに慣れたら、外部イテレータを内部イテレータで書き直してみましょう。</p>
+        <p>最も単純な方法は、Iterable インタフェースに追加された forEach メソッドです。forEach メソッドを使用することで、拡張 for 文を内部イテレータに変換することが可能です。</p>
+        <p>&nbsp;</p>
+        <h4>3-1. forEach メソッドで書き換えてみましょう</h4>
+        <div>
+          <pre class="prettyprint">        List&lt;String&gt; strings = Arrays.asList("a", "b", "c", "d", "e");
+        
+        StringBuilder builder = new StringBuilder();
+        for (String s: strings) {
+            builder.append(s);
+        }
+        System.out.println(builder.toString());</pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>3-2. forEach メソッドで書き換えてみましょう</h4>
+        <div>
+          <pre class="prettyprint">        List&lt;Integer&gt; numbers = Arrays.asList(10, 5, 2, 20, 12, 15);
+ 
+        int sum = 0;
+        for (Integer number: numbers) {
+            sum += number;
+        }
+        System.out.println(sum);</pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>3-3. forEach メソッドで書き換えてみましょう</h4>
+        <p>拡張 for 文でない、単純な for 文も forEach メソッドで書き換えることができます。</p>
+        <p>ただし、ループカウンターを作成しなければなりません。0 から 9 までの数値の入った配列やリストを作成してもよいのですが、それよりもプリミティブ型に対応したストリームを使う方がスマートです。</p>
+        <p>ここではループカウンタが int なので、IntStream インタフェースを使用することができます。IntStream インタフェースには、範囲を指定して IntStream オブジェクトを生成する range メソッドが定義されていますので、これを利用します。</p>
+        <p>Stream インタフェースや IntStream インタフェースなどにも forEach メソッドがあるので、それを使用してみましょう。</p>
+        <div>
+          <pre class="prettyprint">        for (int i = 0; i &lt; 10; i++) {
+            System.out.print(i);
+        }
+        System.out.println();</pre><a name="sec4" id="sec4" ></a>
+        </div>
+        <p>&nbsp;</p>
+        <h3>4. for 文の変換 (Stream)</h3>
+        <p>最後は、ストリームです。</p>
+        <p>ストリームは様々な処理を行うことができるイテレータです。Iterable インタフェースのように、自身ではオブジェクトを保持せずに、元となるコレクションなどの要素をイテレートしていきます。</p>
+        <p>ストリームにはオブジェクトを対象とした Stream インタフェース、プリミティブ型を対象にした IntStream インタフェース、LongStream インタフェース、DoubleStream インタフェースの 4 種類があります。</p>
+        <p>基本的なメソッドは同じですが、sum メソッド、max メソッドなどプリミティブ型が対象のストリームにしかないメソッドもあります。</p>
+        <p>はじめから様々な処理を行っている for 文を変換するのは難しので、簡単な例から徐々に慣れていきましょう。</p>
+        <p>ストリームの生成には複数の方法があります。コレクションから生成するには、 Collection#stream メソッドを使用します。また、IntStream オブジェクトを生成するには、前述した range メソッドを使用するのが手軽です。</p>
+        <p>ストリームはメソッドを多段に連ねて、処理を行います。これをストリームのパイプラインと呼びます。</p>
+        <p>パイプラインの最後に使用できるメソッドが終端操作、それ以外を中間操作と呼びます。中間操作の戻り値は必ずストリームになります。終端操作の戻り値がストリームパイプラインの処理結果になるわけです。</p>
+        <p>今回、使用するストリームの主なメソッドは終端操作が 3 種類、中間操作が 3 種類です。</p>
+        <p>終端操作</p>
+        <ul>
+          <li>forEach 各要素に対して、何らかの処理を行う</li>
+          <li>reduce 前回値を用いて、集約処理を行う</li>
+          <li>collect 要素の集約処理を行う</li>
+        </ul>
+        <p>中間操作</p>
+        <ul>
+          <li>filter 条件に合致した要素だけをフィルタリングする</li>
+          <li>map/mapToInt/mapToDouble/mapToLong/mapToObj 要素を、他の値に変換する</li>
+          <li>flatMap 要素をストリームに変換し、それを連結して 1 つのストリームを生成する</li>
+        </ul>
+        <p>この 6 種類のメソッドが使いこなせれば、ストリームは攻略できるはずです。</p>
+        <p>以下に reduce メソッド、filter メソッド、map メソッドの概念図をあげておきます。</p>
+        <p>reduce メソッドは初期値 (単位元) があり、初期値と初めの要素で何らかの処理を行い、値を返します。その値が次のイテレートのラムダ式の第 1 引数として使用されます。このようにして、最後までイテレートを行い、その戻り値が最終的な結果になります。</p>
+        <div class="text-center figure">
+          <img src="images/reduce0.png" alt="Lambda式への変換" width="297" height="233" />
+          <p>reduce メソッド</p>
+        </div>
+        <p>filter メソッドと map メソッドは中間操作なので、戻り値はストリームになります。</p>
+        <p>filter メソッドは条件に合致した要素だけを残して、新たなストリームを生成するメソッドです。</p>
+        <div class="text-center figure">
+          <img src="images/filter0.png" alt="Lambda式への変換" width="418" height="116" />
+          <p>filter メソッド</p>
+        </div>
+        <p>一方の map メソッドは各要素に対し、何らかの処理を行い、新たな値を作成することで、新たなストリームを作成します。以下の図では文字列のストリームの個々の要素を、Integer オブジェクトに変換しています。最終的に Stream&lt;Integer&gt; オブジェクトを生成します。</p>
+        <div class="text-center figure">
+          <img src="images/map0.png" alt="Lambda式への変換" width="516" height="117" />
+          <p>map メソッド</p>
+        </div>
+        <p>mapToInt メソッドなどの mapToX メソッド群は、map メソッドの一種で、Stream オブジェクトからプリミティブ型に対応した InstStream オブジェクトなど、もしくはプリミティブ型に対応したストリームから Stream オブジェクトへの変換を行うメソッドです。     </p>
+        <p>また、flatMap メソッドも map メソッドの一種ですが、個々の要素をストリームに変換します。通常の map メソッドだと、個々の要素をストリームにすると、ストリームの要素にストリームという入れ子のストリームになります。これに対し、flatMap メソッドでは個々の要素を変換してできたストリームを展開し、最終的に 1 つのストリームに変換するところが map メソッドと異なります。</p>
+        <p>collect メソッドは汎用の集約処理を行うためのメソッドです。collect メソッドは 2 種類のオーバーロードがありますが、よく使われるのは引数の型が Collector インタフェースの方です。引数の型の Collector インタフェースは関数型インタフェースではありません。つまり、collect メソッドの引数に Lambda 式を直接記述することはありません (もう 1 種類のオーバーロードでは Lambda 式を使用します)。</p>
+        <p>では、どうするかというと、Collector インタフェースのためのユーティリティクラスの Collectors クラスを使用します。Collectors クラスでは、多くの static メソッドが提供されています。これらの static メソッドの返り値の型が Collector インタフェースになっています。</p>
+        <p>たとえば、Collectors クラスの toList メソッドの返り値を collecto メソッドの引数にすると、collect メソッドではストリームの要素をリスト化して、返します。</p>
+        <p>このように、Collectors クラスの static メソッドでどのような集約処理を行うかが決められます。</p>
+        <p>では、これらのメソッドを使って、for 文をストリームに書き換えて見ましょう。</p>
+        <p>&nbsp;</p>
+        <h4>4-1. Stream で書き換えてみましょう</h4>
+        <p>はじめに行うのが、条件文を含む拡張 for 文です。        </p>
+        <p>最終的に行う処理は標準出力への出力なので、これは forEach メソッドが使用できます。まず、すべてを forEach メソッドで記述してみましょう。</p>
+        <p>次に条件文を filter メソッドで書き換えることに挑戦してみましょう。</p>
+        <div>
+          <pre class="prettyprint">        List&lt;Integer&gt; numbers = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        for (Integer x: numbers) {
+            if (x % 2 == 0) {
+                System.out.print(x + &quot; &quot;);
+            }
+        }
+        System.out.println();</pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>4-2. Stream で書き換えてみましょう</h4>
+        <p>数値のリストの合計を求める処理をストリームにしてみましょう。</p>
+        <p>ストリームの処理の結果として値を返すには reduce メソッドか、collect メソッドを使用します。reduce メソッドは集約処理を Lambda 式で記述します。</p>
+        <p>これに対して、collect メソッドの場合、引数に Collectors クラスのユーティリティメソッドの戻り値を使用することが多いです。Collectors クラスのメソッドが関数になるということは、これも高階関数ということですね。</p>
+        <p>合計を求めるのは reduce メソッドでも collect メソッドでもできるはずです。</p>
+        <p>また、プリミティブ型に対応したストリームであれば、もっと直接的なメソッドがあるかもしれませんね。</p>
+        <div>
+          <pre class="prettyprint">        List<Integer> numbers = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        int sum = 0;
+        for (Integer x : numbers) {
+            sum += x;
+        }
+        System.out.println(sum);</pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>4-3. Stream で書き換えてみましょう</h4>
+        <p>乱数から生成したリストの平均と分散を求める処理をストリームにしてみましょう。</p>
+        <p>まず、乱数をリストに追加する処理です。</p>
+        <p>この for 文ももちろんストリームで記述できます。</p>
+        <p>この処理でキーになるのはリストに追加しているのが、ループカウンタではないということです。イテレーションしている値を他の値に変えるにはどうすればよいでしょうか。</p>
+        <p>さらに、リストの生成についてもストリームの処理で行えないかどうかを考えてみましょう。</p>
+        <p>ストリームの終端操作の返り値としてリストを返せるようにしたいわけですが、それには collect メソッドが使えそうですよ。</p>
+        <div>
+        <pre class="prettyprint">        Random random = new Random();
+        List&lt;Double&gt; numbers = new ArrayList<>();
+        for (int i = 0; i &lt; 100; i++) {
+            numbers.add(random.nextDouble());
+        }</pre></div>
+        <p>さて、生成したリストの平均を算出しましょう。</p>
+        <p>この場合、中間操作は必要ないので、いきなり終端操作を記述します。この場合も、合計を求めた時と同じように reduce メソッドか collect メソッドを使用します。</p>
+        <p>ここでは、reduce メソッドを使用してみましょう。collect メソッドを使用した場合も、reduce メソッドの使い方が分からないと記述できないので、reduce メソッドをまず攻略してみましょう。</p>
+        <p>reduce メソッドで処理が記述できたら、このコードをもう少し効率よく記述できないか考えてみましょう。キーになるのはオートボクシングです。        </p>
+        <div>
+        <pre class="prettyprint">        double ave = 0.0;
+        for (Double x: numbers) {
+            ave += x;
+        }
+        ave /= numbers.size();</pre></div>
+        <p>最後に分散処を求める処理です。平均が記述できれば、分散も簡単に書けるはずですよ。</p>
+        <div>
+          <pre class="prettyprint">        double div = 0.0;
+        for (Double x: numbers) {
+            div += (x - ave) * (x -ave);                    
+        }
+        div /= numbers.size();</pre>
+        </div>
+        <p>reduce メソッドで記述できたら、今度は collect メソッドでも同じ処理を記述してみましょう。</p>
+        <p>&nbsp;</p>
+        <h4>4-4. Stream で書き換えてみましょう</h4>
+        <p>文字列を要素に持つリストを、個々の単語に分割して、新たにリストに保持させます。</p>
+        <p>１つの要素を分割して、それをまとめるメソッドがありましたよね。</p>
+        <p>&nbsp;</p>
+        <div>
+          <pre class="prettyprint">        List&lt;String&gt; sentences = ...;
+        
+        Set&lt;String&gt; words = new HashSet&lt;&gt;();
+        for (String sentence: sentences) {
+            String[] splitedSentence  = sentence.split("[\\.,\\? ]");
+            for (String word: splitedSentence) {
+                words.add(word);
+            }
+        }</pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>4-5. Stream で書き換えてみましょう</h4>
+        <p>次に行うのはファイルを読み込んで単語数を数えるプログラムの断片です。これも Stream で書き換えてみましょう。</p>
+        <p>ヒント: BufferedReader クラスに Java SE 8 で追加されたメソッドがありますよ。</p>
+        <div>
+          <pre class="prettyprint">        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            int wordCount = 0;
+            
+            for (;;) {
+                String line = reader.readLine();
+                if (line == null) {
+                    break;
+                }
+                
+                String[] words = line.split("[\\.,\\?; ]");
+                wordCount += words.length;
+            }
+            System.out.println(wordCount);
+        } catch (IOException ex) {
+            // 例外処理
+        } </pre>
+        </div>
+        <p>&nbsp;</p>
+        <h4>4-6. Stream で書き換えてみましょう</h4>
+        <p>単語の切り出し、ワードカウントときたら、次は単語ごとの使用回数を数えてみましょう。結果はキーが単語、値が使用回数の Map にすることにします。</p>
+        <div>
+          <pre class="prettyprint">        List&lt;String&gt; sentences = ...;
+          
+        Map&lt;String, Integer&gt; result = new HashMap&lt;&gt;();
+        
+        for (String sentence: sentences) {
+            String[] splitedSentence  = sentence.split("[\\.,\\? ]");
+            
+            for (String word: splitedSentence) {
+                String lowerWord = word.toLowerCase();
+                int count = result.getOrDefault(lowerWord, 0);
+                result.put(lowerWord, count+1);
+            }
+        }</pre>
+        </div>
+        <p>途中までは単語の切り出しと同じですね。単語を切り出した後に、どうやって集計をするかが肝になります。</p>
+        <p>&nbsp;</p>
+        <p>いかがでしたでしょうか。</p>
+        <p>ちなみに、個々の問題は正解が 1 つとは限りません。いろいろな書き方があり、それに応じて使用するメソッドも変化します。いろいろな書き方をできるようにしておくと、応用範囲が広がるはずです。</p>
+        <p>&nbsp;</p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- /.container --> 
+
+<!-- Bootstrap core JavaScript
+    ================================================== --> 
+<!-- Placed at the end of the document so the pages load faster --> 
+<script src="assets/js/jquery.js"></script> 
+<script src="dist/js/bootstrap.min.js"></script>
+</body>
+</html>
